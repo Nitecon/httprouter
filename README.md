@@ -1,4 +1,5 @@
-# HttpRouter [![Build Status](https://travis-ci.org/julienschmidt/httprouter.svg?branch=master)](https://travis-ci.org/julienschmidt/httprouter) [![GoDoc](https://godoc.org/github.com/julienschmidt/httprouter?status.svg)](http://godoc.org/github.com/julienschmidt/httprouter)
+# HttpRouter [![GoDoc](https://godoc.org/github.com/Nitecon/httprouter?status.svg)](http://godoc.org/github.com/Nitecon/httprouter)
+Convert to using Go 1.7 Context for parameters + upstream changes from Julien
 
 HttpRouter is a lightweight high performance HTTP request router (also called *multiplexer* or just *mux* for short) for [Go](https://golang.org/).
 
@@ -10,7 +11,7 @@ The router is optimized for high performance and a small memory footprint. It sc
 
 **Only explicit matches:** With other routers, like [`http.ServeMux`][http.ServeMux], a requested URL path could match multiple patterns. Therefore they have some awkward pattern priority rules, like *longest match* or *first registered, first matched*. By design of this router, a request can only match exactly one or no route. As a result, there are also no unintended matches, which makes it great for SEO and improves the user experience.
 
-**Stop caring about trailing slashes:** Choose the URL style you like, the router automatically redirects the client if a trailing slash is missing or if there is one extra. Of course it only does so, if the new path has a handler. If you don't like it, you can [turn off this behavior](https://godoc.org/github.com/julienschmidt/httprouter#Router.RedirectTrailingSlash).
+**Stop caring about trailing slashes:** Choose the URL style you like, the router automatically redirects the client if a trailing slash is missing or if there is one extra. Of course it only does so, if the new path has a handler. If you don't like it, you can [turn off this behavior](https://godoc.org/github.com/Nitecon/httprouter#Router.RedirectTrailingSlash).
 
 **Path auto-correction:** Besides detecting the missing or additional trailing slash at no extra cost, the router can also fix wrong cases and remove superfluous path elements (like `../` or `//`). Is [CAPTAIN CAPS LOCK](http://www.urbandictionary.com/define.php?term=Captain+Caps+Lock) one of your users? HttpRouter can help him by making a case-insensitive look-up and redirecting him to the correct URL.
 
@@ -24,11 +25,11 @@ The router is optimized for high performance and a small memory footprint. It sc
 
 **Perfect for APIs:** The router design encourages to build sensible, hierarchical RESTful APIs. Moreover it has builtin native support for [OPTIONS requests](http://zacstewart.com/2012/04/14/http-options-method.html) and `405 Method Not Allowed` replies.
 
-Of course you can also set **custom [`NotFound`][Router.NotFound] and  [`MethodNotAllowed`](https://godoc.org/github.com/julienschmidt/httprouter#Router.MethodNotAllowed) handlers** and [**serve static files**][Router.ServeFiles].
+Of course you can also set **custom [`NotFound`][Router.NotFound] and  [`MethodNotAllowed`](https://godoc.org/github.com/Nitecon/httprouter#Router.MethodNotAllowed) handlers** and [**serve static files**][Router.ServeFiles].
 
 ## Usage
 
-This is just a quick introduction, view the [GoDoc](http://godoc.org/github.com/julienschmidt/httprouter) for details.
+This is just a quick introduction, view the [GoDoc](http://godoc.org/github.com/Nitecon/httprouter) for details.
 
 Let's start with a trivial example:
 
@@ -37,17 +38,17 @@ package main
 
 import (
     "fmt"
-    "github.com/julienschmidt/httprouter"
+    "github.com/Nitecon/httprouter"
     "net/http"
     "log"
 )
 
-func Index(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+func Index(w http.ResponseWriter, r *http.Request) {
     fmt.Fprint(w, "Welcome!\n")
 }
 
-func Hello(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-    fmt.Fprintf(w, "hello, %s!\n", ps.ByName("name"))
+func Hello(w http.ResponseWriter, r *http.Request) {
+    fmt.Fprintf(w, "hello, %s!\n", httprouter.GetParam(r, "name"))
 }
 
 func main() {
@@ -61,8 +62,7 @@ func main() {
 
 ### Named parameters
 
-As you can see, `:name` is a *named parameter*. The values are accessible via `httprouter.Params`, which is just a slice of `httprouter.Param`s. You can get the value of a parameter either by its index in the slice, or by using the `ByName(name)` method: `:name` can be retrived by `ByName("name")`.
-
+As you can see, `:name` is a *named parameter*. The values are accessible via `httprouter.GetParam`, which returns the value of the given key. Additionally you can access the `httprouter.Params` slice through `httprouter.GetParams`, which allows you to access the parameters by index.
 Named parameters only match a single path segment:
 
 ```
@@ -189,17 +189,17 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/julienschmidt/httprouter"
+	"github.com/Nitecon/httprouter"
 )
 
 func BasicAuth(h httprouter.Handle, requiredUser, requiredPassword string) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		// Get the Basic Authentication credentials
 		user, password, hasAuth := r.BasicAuth()
 
 		if hasAuth && user == requiredUser && password == requiredPassword {
 			// Delegate request to the given handle
-			h(w, r, ps)
+			h(w, r)
 		} else {
 			// Request Basic Authentication otherwise
 			w.Header().Set("WWW-Authenticate", "Basic realm=Restricted")
@@ -251,7 +251,7 @@ If the HttpRouter is a bit too minimalistic for you, you might try one of the fo
 
 * [Ace](https://github.com/plimble/ace): Blazing fast Go Web Framework
 * [api2go](https://github.com/manyminds/api2go): A JSON API Implementation for Go
-* [Gin](https://github.com/gin-gonic/gin): Features a martini-like API with much better performance
+* [Gin](https://github.com/gin-gonic/gin): Features a martini-like API with much better performanceW
 * [Goat](https://github.com/bahlo/goat): A minimalistic REST API server in Go
 * [Hikaru](https://github.com/najeira/hikaru): Supports standalone and Google AppEngine
 * [Hitch](https://github.com/nbio/hitch): Hitch ties httprouter, [httpcontext](https://github.com/nbio/httpcontext), and middleware up in a bow
@@ -264,13 +264,13 @@ If the HttpRouter is a bit too minimalistic for you, you might try one of the fo
 * [siesta](https://github.com/VividCortex/siesta): Composable HTTP handlers with contexts
 * [xmux](https://github.com/rs/xmux): xmux is a httprouter fork on top of xhandler (net/context aware)
 
-[benchmark]: <https://github.com/julienschmidt/go-http-routing-benchmark>
+[benchmark]: <https://github.com/Nitecon/go-http-routing-benchmark>
 [http.Handler]: <https://golang.org/pkg/net/http/#Handler
 [http.ServeMux]: <https://golang.org/pkg/net/http/#ServeMux>
-[Router.Handle]: <https://godoc.org/github.com/julienschmidt/httprouter#Router.Handle>
-[Router.HandleMethodNotAllowed]: <https://godoc.org/github.com/julienschmidt/httprouter#Router.HandleMethodNotAllowed>
-[Router.Handler]: <https://godoc.org/github.com/julienschmidt/httprouter#Router.Handler>
-[Router.HandlerFunc]: <https://godoc.org/github.com/julienschmidt/httprouter#Router.HandlerFunc>
-[Router.NotFound]: <https://godoc.org/github.com/julienschmidt/httprouter#Router.NotFound>
-[Router.PanicHandler]: <https://godoc.org/github.com/julienschmidt/httprouter#Router.PanicHandler>
-[Router.ServeFiles]: <https://godoc.org/github.com/julienschmidt/httprouter#Router.ServeFiles>
+[Router.Handle]: <https://godoc.org/github.com/Nitecon/httprouter#Router.Handle>
+[Router.HandleMethodNotAllowed]: <https://godoc.org/github.com/Nitecon/httprouter#Router.HandleMethodNotAllowed>
+[Router.Handler]: <https://godoc.org/github.com/Nitecon/httprouter#Router.Handler>
+[Router.HandlerFunc]: <https://godoc.org/github.com/Nitecon/httprouter#Router.HandlerFunc>
+[Router.NotFound]: <https://godoc.org/github.com/Nitecon/httprouter#Router.NotFound>
+[Router.PanicHandler]: <https://godoc.org/github.com/Nitecon/httprouter#Router.PanicHandler>
+[Router.ServeFiles]: <https://godoc.org/github.com/Nitecon/httprouter#Router.ServeFiles>
